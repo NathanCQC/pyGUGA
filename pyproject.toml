@@ -12,3 +12,6 @@ build-backend = "setuptools.build_meta"
 version_scheme = 'release-branch-semver'
 write_to = "pyTUGA/version.py"
 git_describe_command = 'git describe --dirty --tags --long --match "*[0-9]*" --abbrev=14'
+
+[tool.mypy]
+strict = true
