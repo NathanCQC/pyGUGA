@@ -3,30 +3,33 @@ import numpy as np
 import pandas as pd
 from scipy.special import binom
 import sys
+from typing import Callable,Any
 
 sys.setrecursionlimit(10**8)
 import quimb as qu
 import quimb.tensor as qtn
 from autoray import do
 
+import numpy.typing as npt
+
+
 
 class ShavittGraph():
     """ Generates the Distinct row table for Shavitt GUGA graph
     follows convention - W. Dobrautz  -J. Chem. Phys. 151, 094104 (2019); doi: 10.1063/1.5108908 """
-    def __init__(self, abc_triple: tuple):
+    def __init__(self, abc_triple: tuple[int, int, int]) -> None:
 
         self._abc_final = abc_triple
-        self._nspatorbs = self._abc_final[0] + self._abc_final[
-            1] + self._abc_final[2]
+        self._nspatorbs = self._abc_final[0] + self._abc_final[1] + self._abc_final[2]
         self._abc_node_dict = self._get_node_dict()
         self._ki_dict = self._get_downward_chaining_indices()
         self._li_dict = self._get_upward_chaining_indices()
         self._nnode = list(self._abc_node_dict.values())[-1]
         self._distinct_row_table = self._get_distinct_row_table()
-        self._csf_list = []
+        self._csf_list:list[None] = []
         self._n_csfs = None
 
-    def abc_dim(self):
+    def _abc_dim(self) -> int:
 
         abc = np.array(self._abc_final)
         n = abc.sum()
@@ -37,7 +40,7 @@ class ShavittGraph():
         return int(dim)
 
     class CSF():
-        def __init__(self, idstat, jstat, index) -> None:
+        def __init__(self, idstat:npt.NDArray[np.int_], jstat:npt.NDArray[np.int_], index:int) -> None:
             self.index = index
             self.idstat = idstat.tolist()
             self.jstat = jstat.tolist()
@@ -51,9 +54,9 @@ class ShavittGraph():
                 for j, d in zip(self.jstat[0:self.nspatorbs], self.idstat)
             }
 
-    def _get_node_dict(self) -> dict:
+    def _get_node_dict(self) -> dict[tuple[int, int, int, int], int]:
 
-        # (a,b,c, N):j
+        # (a,b,c, N):j 
 
         # Horrible indexing problem No other way I think. reminds me of first year phd suffering
 
@@ -114,7 +117,7 @@ class ShavittGraph():
 
         return abc_node_dict
 
-    def _get_downward_chaining_indices(self):
+    def _get_downward_chaining_indices(self) -> dict[int, list[int|str]]:
 
         ki_dict = {}
         for j, j_abc in zip(self._abc_node_dict.values(),
@@ -134,7 +137,7 @@ class ShavittGraph():
 
         return ki_dict
 
-    def _get_upward_chaining_indices(self):
+    def _get_upward_chaining_indices(self) -> dict[int, list[int|str]]:
 
         li_dict = {}
         for j, j_abc in zip(self._abc_node_dict.values(),
@@ -154,7 +157,7 @@ class ShavittGraph():
 
         return li_dict
 
-    def _get_distinct_row_table(self):
+    def _get_distinct_row_table(self) -> pd.DataFrame:
 
         uirrep = []
         for u in reversed(range(self._nspatorbs + 1)):
@@ -184,14 +187,16 @@ class ShavittGraph():
         return pd.DataFrame(data, index=nodes).rename_axis('j')
 
     @property
-    def distinct_row_table(self):
+    def distinct_row_table(self) -> pd.DataFrame:
         return self._distinct_row_table
 
-    def _get_csfs(self):
+    def _get_csfs(self) -> None:
+        """Get the CSFs for the given number of spatial orbitals.
+        This should never be run in production and should only be used for testing."""
 
         jstat = np.zeros(self._nspatorbs + 1, dtype=int)  # plus 1 bulshit
         # ibrnch = np.zeros(self._nspatorbs + 1, dtype=int)
-        ibrnch = [
+        ibrnch:list[Any] = [
             None for i in range(self._nspatorbs)
         ]  #[(node, next d)] #records the branching at the progressive levels
         idstat = np.zeros(self._nspatorbs, dtype=int)
@@ -236,8 +241,8 @@ class ShavittGraph():
         # print('n',n,'idstat',idirn,'jstat',jstat[n])
 
         def recurive_walk(
-                n, idirn, ibrnch, jstat,
-                nstate):  # Does a single step, recurively updates for n+1
+                n:int, idirn:npt.NDArray[np.int_], ibrnch:list[Any], jstat:npt.NDArray[np.int_],
+                nstate:int) -> Callable[[int,npt.NDArray[np.int_],list[Any],npt.NDArray[np.int_],int], Any] | None:  #This shoud be using a recursive dataclass
             # Needed to populate the
             n = n + 1  # Next level from previous brnaching point
             idstat[n - 1] = idirn
@@ -258,7 +263,7 @@ class ShavittGraph():
             else:
                 raise (ValueError('d error'))
 
-            def next_branch_d(ibrnch, n):
+            def next_branch_d(ibrnch:list[Any], n:int) -> tuple[list[Any], int]:
 
                 branches = [
                     self.distinct_row_table['l0'][jstat[n]],
@@ -269,6 +274,26 @@ class ShavittGraph():
 
                 if ibrnch[n] == (None or False):
                     ibrnch[n] = 4  #Hacky
+                # for d, ld in reversed(list(enumerate(branches[0:ibrnch[n]]))):
+                #     if ld != 'None':
+                #         if d != 0:
+                #             for d1, ld1 in reversed(
+                #                     list(enumerate(branches[0:d]))):
+                #                 if ld1 != 'None':  # this checks for not None
+                #                     ibrnch[n] = d
+                #                     idirn = d
+                #                     return ibrnch, idirn
+                #                 else:
+                #                     ibrnch[n] = False
+                #             idirn = d
+                #             return ibrnch, idirn
+                #         else:
+                #             ibrnch[n] = False
+                #         idirn = d
+                #         return ibrnch, idirn
+                #     else: # THIS IS POSSIBLY BUGGY
+                #         raise ValueError('invalid branching direction')
+
                 for d, ld in reversed(list(enumerate(branches[0:ibrnch[n]]))):
                     if ld != 'None':
                         if d != 0:
@@ -277,17 +302,19 @@ class ShavittGraph():
                                 if ld1 != 'None':  # this checks for not None
                                     ibrnch[n] = d
                                     idirn = d
-                                    return ibrnch, idirn
+                                    break
                                 else:
                                     ibrnch[n] = False
                             idirn = d
-                            return ibrnch, idirn
+                            break
                         else:
                             ibrnch[n] = False
                         idirn = d
-                        return ibrnch, idirn
-                    # else: # THIS IS POSSIBLY BUGGY
-                    #     raise ValueError('invalid branching direction')
+                        break
+                    else: # THIS IS POSSIBLY BUGGY
+                        raise ValueError('invalid branching direction')
+                return ibrnch, idirn
+               
 
             if (n != self._nspatorbs):
                 ibrnch, idirn = next_branch_d(ibrnch, n)
@@ -312,9 +339,7 @@ class ShavittGraph():
 
         self._nstates = nstate
 
-        return
-
-    def tensor_network_state(self, type):
+    def tensor_network_state(self, type) -> qtn.TensorNetwork:
         #k are downward chaining indices
         j_tensors = []
 
@@ -657,7 +682,7 @@ class ShavittGraphAB():
     def distinct_row_table(self):
         return self._distinct_row_table
 
-    def _get_csfs(self):
+    def _get_csfs(self) -> None:
 
         jstat = np.zeros(self._nspatorbs + 1, dtype=int)  # plus 1 bulshit
         # ibrnch = np.zeros(self._nspatorbs + 1, dtype=int)
@@ -728,7 +753,7 @@ class ShavittGraphAB():
             else:
                 raise (ValueError('d error'))
 
-            def next_branch_d(ibrnch, n):
+            def next_branch_d(ibrnch: list[Any], n:int):
 
                 branches = [
                     # self.distinct_row_table['l0'][jstat[n]],
@@ -963,13 +988,50 @@ class ShavittGraphAB():
 
         return tensor_network_state
 
-    def tensor_network_operator(
+    # def tensor_network_operator(
+    #         self):  #Need to figure our what goes in the tensor
+    #     #k are downward chaining indices
+    #     j_tensors = []
+
+    #     # Build the node tensors
+    #     for j in self.distinct_row_table.index.tolist():
+    #         # tagged [ j , u , uirrep] Maybe this could just be linked to the row of drt.
+    #         # If ever in doubt just link index j to drt
+    #         u = self.distinct_row_table['u'][j]
+    #         u = f'U{u}'
+    #         uirrep = self.distinct_row_table['uirrep'][j]
+    #         uirrep = f'UIRREP{uirrep}'
+
+    #         j_tensor = qtn.Tensor(tags={f'J{j}', u, uirrep, 'OPERATOR'})
+
+    #         j_tensor.new_ind(f'{j}bra', size=4)
+    #         j_tensor.new_ind(f'{j}ket', size=4)
+
+    #         for l in [1,2]:
+    #             if self.distinct_row_table[f'l{l}'][j] != 'None':
+    #                 l_node = self.distinct_row_table[f'l{l}'][j]
+    #                 j_tensor.new_ind(f'{l_node}_{j}', size=4)
+
+    #         for k in [1,2]:
+    #             if self.distinct_row_table[f'k{k}'][j] != 'None':
+    #                 k_node = self.distinct_row_table[f'k{k}'][j]
+    #                 j_tensor.new_ind(f'{j}_{k_node}', size=4)
+
+    #         j_tensors.append(j_tensor)
+
+    #     # Build tensor network
+    #     tensor_network_operator = j_tensors[0]
+    #     for j in j_tensors[1:]:
+    #         tensor_network_operator = j & tensor_network_operator
+
+    #     return tensor_network_operator
+
+    def tensor_network_operator_new(
             self):  #Need to figure our what goes in the tensor
         #k are downward chaining indices
         j_tensors = []
-
         # Build the node tensors
-        for j in self.distinct_row_table.index.tolist():
+        for j in reversed(self.distinct_row_table.index.tolist()):
             # tagged [ j , u , uirrep] Maybe this could just be linked to the row of drt.
             # If ever in doubt just link index j to drt
             u = self.distinct_row_table['u'][j]
@@ -977,29 +1039,101 @@ class ShavittGraphAB():
             uirrep = self.distinct_row_table['uirrep'][j]
             uirrep = f'UIRREP{uirrep}'
 
-            j_tensor = qtn.Tensor(tags={f'J{j}', u, uirrep, 'OPERATOR'})
+            # Upper Walks (Very confusing l is upper)
+            inds_l = [] # This is quite sketchky think of better way
+            if j != self.distinct_row_table.index.tolist()[0]:
+                inds_l.append(f'{j}l')
+                for l in [1,2]:
+                    if self.distinct_row_table[f'l{l}'][j] != 'None':
+                        print('oij')
+                        l_node = self.distinct_row_table[f'l{l}'][j]
+                        inds_l.append(f'{l_node}_{j}')
+                j_l_tensor = qtn.COPY_tensor(2,inds=inds_l) # I thinks this is 4 nodt len(inds_l)-1
 
-            j_tensor.new_ind(f'{j}bra', size=4)
-            j_tensor.new_ind(f'{j}ket', size=4)
+            # Lower Walks
+            inds_k = []
+            if j != self.distinct_row_table.index.tolist()[-1]:
+                inds_k.append(f'{j}k')
+                for k in [1,2]:
+                    if self.distinct_row_table[f'k{k}'][j] != 'None':
+                        k_node = self.distinct_row_table[f'k{k}'][j]
+                        # j_tensor.new_ind(f'{j}_{k_node}', size=4)
+                        inds_k.append(f'{j}_{k_node}')
+                j_k_tensor =  qtn.COPY_tensor(2,inds=inds_k)
 
-            for l in [1,2]:
-                if self.distinct_row_table[f'l{l}'][j] != 'None':
-                    l_node = self.distinct_row_table[f'l{l}'][j]
-                    j_tensor.new_ind(f'{l_node}_{j}', size=4)
-
+            dim_walk_ind_d = 0 # Must be a better way of doing this.
             for k in [1,2]:
                 if self.distinct_row_table[f'k{k}'][j] != 'None':
-                    k_node = self.distinct_row_table[f'k{k}'][j]
-                    j_tensor.new_ind(f'{j}_{k_node}', size=4)
+                    dim_walk_ind_d += 1 
 
-            j_tensors.append(j_tensor)
+            #Parameterised tensor
+            j_ind = f'{j}'
+            jdash_ind = f'{j}_d'
+            # These are the CG matrices
+            #b is the total spin value
+            def elements(params):  
+                def matrix_slice(theta):
+                    c = do('cos', theta / 2)
+                    s = do('sin', theta / 2)
+                    d = ((c, -s,), (s, c))
+                    return d
+                data = [matrix_slice(i) for i in params]
+                return do('array', data)
 
-        # Build tensor network
-        tensor_network_operator = j_tensors[0]
-        for j in j_tensors[1:]:
-            tensor_network_operator = j & tensor_network_operator
 
-        return tensor_network_operator
+            def elements_row(params): # Do we need a parameter here?, Does it need to be normalised? Like in tensor networks code
+                def matrix_slice(theta):
+                    c = do('cos', theta / 2)
+                    s = do('sin', theta / 2)
+                    d = (c, -s,)
+                    return d
+                data = [matrix_slice(i) for i in params]
+                return do('array', data)
+
+            #get indexing correct with identity
+
+            def matrix_slice(self, j, m_dash):
+                # Generates controlled Ry for given j and m_dash
+
+                #b = math.sqrt(l/(l+k))
+                #c = math.sqrt((k+l-1)/(k+1))
+                #m=-1/2 -> m  (m+1/2 walk)You
+
+                a = math.sqrt((j + m_dash + 0.5) / (2 * j + 1))
+                theta = math.acos(a)
+
+                # print(theta)
+
+                u = np.identity(2)
+                u[0][0] = math.cos(theta) # Slightly confused by the tensor structure
+                u[0][1] = -math.sin(theta)
+                u[1][0] = math.sin(theta)
+                u[1][1] = math.cos(theta)
+
+                # print(u, theta)
+
+                theta = theta/math.pi
+
+                return theta
+
+
+             #This are the initial parameters
+            if inds_k != [] and inds_l != []: # Middle nodes
+                d_tensor = qtn.PTensor(elements, angles, inds=[f'{j}l',f'{j}k',j_ind,jdash_ind])
+                j_tensor = j_l_tensor & d_tensor & j_k_tensor
+                # rank 2 array
+            elif inds_l == []: # No upper walks. Head node. head node should be a column. But not sure if this is applicable in tensor networks as long as the indexing is correct
+                # Row vector
+                d_tensor = qtn.PTensor(elements_row, angles, inds=[f'{j}k',j_ind,jdash_ind]) # Head node should be a column, BUG IT SEEMS TO BE NOT CONNECTING
+
+                j_tensor = d_tensor & j_k_tensor
+            elif inds_k == []: # No upper walks. Tail node
+                # column vector
+                d_tensor = qtn.PTensor(elements_row, angles, inds=[f'{j}l',j_ind,jdash_ind])
+
+                j_tensor = j_l_tensor & d_tensor 
+            else:
+                raise(ValueError('BUG ALERT'))
 
         # Build tensor network
         tensor_network_operator = j_tensors[0]
@@ -1010,9 +1144,9 @@ class ShavittGraphAB():
 
     def tensor_network_expection(self):
 
-        bra = self.tensor_network_state('bra')
-        operator = self.tensor_network_operator()
-        ket = self.tensor_network_state('ket')
+        bra = self.ptensor_network_state('bra')
+        operator = self.tensor_network_operator_new()
+        ket = self.ptensor_network_state('ket')
 
         tensor_expectation = bra & operator & ket
 
