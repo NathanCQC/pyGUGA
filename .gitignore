@@ -1,3 +1,17 @@
+# qtmlib/.gitignore file contents
+__pycache__/
 *.pyc
-*.json
-*.DS_Store
+*.pyo
+*.egg-info/
+dist/
+build/
+.idea/
+.vscode/
+__pypackages__/
+*.log
+*.swp
+.DS_Store
+.qtmlib/
+*.venv/
+pyenv.cfg
+docs/source/api_reference/*.rst

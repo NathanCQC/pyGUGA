@@ -1,16 +1,49 @@
 [build-system]
-requires = [
-    "setuptools~=52.0.0",
-    "wheel~=0.36",
-    "cython~=0.29.0",
-    "setuptools_scm[toml]>=6.0"
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "pyguga"
+version = "0.0.1"
+description = "A python library to build GUGA graphs"
+requires-python = ">=3.13"
+authors = [{name = "Nathan Fitzpatrick", email = "nathan.fitzpatrick@quantinuum.com" }]
+dependencies = [
+    "networkx",
+    "rustworkx",
+    "numpy",
+    "pandas",
+    "pre-commit"
 ]
-build-backend = "setuptools.build_meta"
 
-[tool.setuptools_scm]
-version_scheme = 'release-branch-semver'
-write_to = "pyTUGA/version.py"
-git_describe_command = 'git describe --dirty --tags --long --match "*[0-9]*" --abbrev=14'
+[tool.setuptools.packages.find]
+where = ["."]
 
-[tool.mypy]
-strict = true
+[tool.ruff]
+# Enable flake8-bugbear (`B`) rules, pandas, see https://beta.ruff.rs/docs/rules/
+lint.select = ["E", "F", "B", "RUF","PT","UP", "C4", "D"]
+lint.ignore = ["RUF002"]
+extend-exclude = ["**/*.ipynb", "tests/conftest.py", ".venv/**", "docs/**", "pyguga/_types/_type_stubs/**"]
+target-version = "py313"
+[tool.lint.ruff.per-file-ignores]
+"__init__.py" = ["F401"]
+"tests/conftest.py" = ["D103"]
+
+[tool.lint.ruff.pydocstyle]
+# Use Google-style docstrings.
+convention = "google"
+
+#https://microsoft.github.io/pyright/#/getting-started
+[tool.pyright]
+venvPath = "."
+venv = ".venv"
+include = ["pyguga","tests"]
+ignore = ["**/*.ipynb", ".venv/**", "docs/**"]
+pythonVersion = "3.13"
+typeCheckingMode = "strict"
+stubPath = "pyguga/_types/_type_stubs"
+reportPrivateUsage = false
+
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
