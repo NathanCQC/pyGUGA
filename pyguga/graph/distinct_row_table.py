@@ -133,9 +133,9 @@ class DistinctRowTable:
                     a = a + 1
         j_values = list(self._abc_node_dict.values())
         data: dict[str, list[int | str] | list[int]] = {
-            "a": [i[0] for i in self._abc_node_dict.keys()],
-            "b": [i[1] for i in self._abc_node_dict.keys()],
-            "c": [i[2] for i in self._abc_node_dict.keys()],
+            "a": [int(i[0]) for i in self._abc_node_dict.keys()],
+            "b": [int(i[1]) for i in self._abc_node_dict.keys()],
+            "c": [int(i[2]) for i in self._abc_node_dict.keys()],
             "u": [i[3] for i in self._abc_node_dict.keys()],
             "uirrep": uirrep,
             "k0": [i[0] for i in self._ki_dict.values()],  # downward chaining indices
@@ -158,3 +158,7 @@ class DistinctRowTable:
         a, b, c, u, uirrep, k0, k1, k2, k3, l0, l1, l2, l3.
         """
         return self._distinct_row_table
+
+    def df_orbital_level(self, u_level: int) -> pd.DataFrame:
+        """Return the Distinct Row Table for a given orbital level."""
+        return self.df[self.df["u"] == u_level]
