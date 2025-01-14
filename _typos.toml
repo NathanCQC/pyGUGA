@@ -1,9 +1,9 @@
 [default]
-extend-ignore-words-re = [
-    "^[a-zA-Z]?[a-zA-Z]?[a-zA-Z]?$",  # Ignore words up to 3 characters
-    "\\$[^\\$]*\\$",  # Ignore content between single $...$
-    "\\$\\$[^\\$]*\\$\\$",  # Ignore content between double $$...$$
-]
+# extend-ignore-words-re = [
+#     "^[a-zA-Z]?[a-zA-Z]?[a-zA-Z]?$",  # Ignore words up to 3 characters
+#     "\\$[^\\$]*\\$",  # Ignore content between single $...$
+#     "\\$\\$[^\\$]*\\$\\$",  # Ignore content between double $$...$$
+# ]
 
 [default.extend-words]
 arange = "arange"  # e.g. `numpy.arange`
