@@ -11,6 +11,7 @@ authors = [{name = "Nathan Fitzpatrick", email = "nathan.fitzpatrick@quantinuum.
 dependencies = [
     "pytest",
     "pytest-parallel",
+    "py",
     "networkx",
     "rustworkx",
     "numpy",
