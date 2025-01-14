@@ -1,0 +1,27 @@
+name: pyguga python app
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.12","3.13"]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install the latest version of uv and set the python version
+        uses: astral-sh/setup-uv@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Run pre-commit with python ${{ matrix.python-version }}
+        run: uv run pre-commit run --all-files
+
+      - name: Run parallel tests with python ${{ matrix.python-version }}
+        run: uv run pytest --workers auto --tests-per-worker auto
