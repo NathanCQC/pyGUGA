@@ -16,6 +16,7 @@ dependencies = [
     "rustworkx",
     "numpy",
     "pandas",
+    "pandas-stubs",
     "pre-commit"
 ]
 
