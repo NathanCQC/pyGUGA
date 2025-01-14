@@ -9,6 +9,7 @@ description = "A python library to build GUGA graphs"
 requires-python = ">=3.13"
 authors = [{name = "Nathan Fitzpatrick", email = "nathan.fitzpatrick@quantinuum.com" }]
 dependencies = [
+    "pytest",
     "networkx",
     "rustworkx",
     "numpy",
